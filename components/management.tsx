@@ -25,7 +25,7 @@ export default function Management(){
  const [selected,setSelected]=useState('chains');const [rows,setRows]=useState<Row[]>([]);
  const [loading,setLoading]=useState(false);const [error,setError]=useState('');
  const [editing,setEditing]=useState<Row|null>(null);const [creating,setCreating]=useState(false);
- const [title,setTitle]=useState('');const [details,setDetails]=useState('');const [saving,setSaving]=useState(false);
+ const [title,setTitle]=useState('');const [details,setDetails]=useState('');const [weight,setWeight]=useState(100);const [saving,setSaving]=useState(false);
  const current=collections.find(c=>c.key===selected)!;
  const load=useCallback(async()=>{
   setLoading(true);setError('');
@@ -37,13 +37,13 @@ export default function Management(){
   finally{setLoading(false)}
  },[selected]);
  useEffect(()=>{void load()},[load]);
- function edit(row:Row){setEditing(row);setCreating(false);setTitle(row.title);setDetails(row.details)}
+ function edit(row:Row){setEditing(row);setCreating(false);setTitle(row.title);setDetails(row.details);setWeight(Number(row.weight??100))}
  function create(){setCreating(true);setEditing(null);setTitle('');setDetails('')}
  async function mutate(action:'create'|'update'|'delete',row?:Row){
   if(action==='delete'&&!window.confirm('Permanently delete this record?'))return;
   setSaving(true);setError('');
   try{
-   const response=await fetch('/api/management',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type:selected,action,id:row?.id||editing?.id,title:action==='delete'?row?.title:title,details:action==='delete'?row?.details:details})});
+   const response=await fetch('/api/management',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type:selected,action,id:row?.id||editing?.id,title:action==='delete'?row?.title:title,details:action==='delete'?row?.details:details,weight})});
    const data=await response.json();if(!response.ok)throw Error(data.error||'Operation failed');
    setEditing(null);setCreating(false);await load();
   }catch(e){setError(e instanceof Error?e.message:'Operation failed')}
@@ -67,12 +67,13 @@ export default function Management(){
  {selected!=='images'&&error&&<p role="alert" className="form-error">{error}</p>}
  {selected!=='images'&&(editing||creating)&&<form onSubmit={e=>{e.preventDefault();void mutate(creating?'create':'update')}} className="panel" style={{padding:22,display:'grid',gap:13,marginTop:18}}>
  <label>Title / value<input required maxLength={200} value={title} onChange={e=>setTitle(e.target.value)} style={{display:'block',padding:12,width:'100%',marginTop:7,border:'1px solid #dedeea',borderRadius:7}}/></label>
+ {selected==='mix'&&<label>Mix weight (0–100)<input type="number" min={0} max={100} value={weight} onChange={e=>setWeight(Number(e.target.value))} style={{display:'block',padding:12,marginTop:7,border:'1px solid #dedeea',borderRadius:7}}/></label>}
  <label>Details<textarea value={details} onChange={e=>setDetails(e.target.value)} rows={3} style={{display:'block',padding:12,width:'100%',marginTop:7,border:'1px solid #dedeea',borderRadius:7}}/></label>
  <div style={{display:'flex',gap:10}}><button disabled={saving} className="primary" type="submit">{saving?'Saving...':'Save'}</button><button type="button" className="secondary" onClick={()=>{setEditing(null);setCreating(false)}}>Cancel</button></div>
  </form>}
  {selected!=='images'&&<div className="panel table-panel" style={{marginTop:22}}>
  <div className="table-scroll"><table><thead><tr><th>NAME / VALUE</th><th>DETAILS</th><th>CREATED</th>{current.mode!=='read'&&<th>ACTIONS</th>}</tr></thead><tbody>
- {rows.map(row=><tr key={row.id}><td style={{fontWeight:700}}>{row.title}</td><td style={{maxWidth:400,whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.details||'—'}</td><td style={{whiteSpace:'nowrap'}}>{new Date(row.created_at).toLocaleDateString()}</td>{current.mode!=='read'&&<td><div style={{display:'flex',gap:8}}><button className="secondary" onClick={()=>edit(row)} title="Edit"><Pencil size={14}/></button>{current.mode==='crud'&&<button className="secondary" onClick={()=>void mutate('delete',row)} title="Delete"><Trash2 size={14}/></button>}</div></td>}</tr>)}
+ {rows.map(row=><tr key={row.id}><td style={{fontWeight:700}}>{row.title}{selected==='mix'&&<small style={{display:'block',color:'#7464df',marginTop:4}}>Weight: {String(row.weight??100)}%</small>}</td><td style={{maxWidth:400,whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.details||'—'}</td><td style={{whiteSpace:'nowrap'}}>{new Date(row.created_at).toLocaleDateString()}</td>{current.mode!=='read'&&<td><div style={{display:'flex',gap:8}}><button className="secondary" onClick={()=>edit(row)} title="Edit"><Pencil size={14}/></button>{current.mode==='crud'&&<button className="secondary" onClick={()=>void mutate('delete',row)} title="Delete"><Trash2 size={14}/></button>}</div></td>}</tr>)}
  </tbody></table></div>{!loading&&rows.length===0&&<p style={{padding:25,color:'#8c8e9b'}}>No records yet. {current.mode==='read'?'This collection is read-only.':'You can create the first entry above.'}</p>}{loading&&<p style={{padding:25}}>Loading…</p>}
  </div>}</section></div></div>;
 }
