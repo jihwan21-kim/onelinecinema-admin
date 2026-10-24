@@ -52,12 +52,16 @@ export async function POST(request:NextRequest){
  const title=typeof body.title==='string'?body.title.trim():'';
  const details=typeof body.details==='string'?body.details.slice(0,10000):'';
  const id=typeof body.id==='string'?body.id:'';
+ const weight=Number(body.weight);
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  if(action!=='delete'&&(!title||title.length>200))return NextResponse.json({error:'Title required (maximum 200 characters)'},{status:400});
  if(action!=='create'&&!uuid.test(id))return NextResponse.json({error:'Valid ID required'},{status:400});
  const supabase=ctx.supabase!;let result;
  if(action==='create')result=await supabase.from(config.table).insert({title,details}).select().single();
- else if(action==='update')result=await supabase.from(config.table).update({title,details}).eq('id',id).select().single();
+ else if(action==='update'){
+  if(key==='mix'&&(!Number.isInteger(weight)||weight<0||weight>100))return NextResponse.json({error:'Mix weight must be an integer between 0 and 100'},{status:400});
+  result=await supabase.from(config.table).update(key==='mix'?{title,details,weight}:{title,details}).eq('id',id).select().single();
+ }
  else if(action==='delete')result=await supabase.from(config.table).delete().eq('id',id).select().single();
  else return NextResponse.json({error:'Unknown action'},{status:400});
  return NextResponse.json(result.error?{error:result.error.message}:{row:result.data},{status:result.error?400:200});
