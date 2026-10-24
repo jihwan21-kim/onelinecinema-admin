@@ -26,6 +26,16 @@ async function context(key:string){
 }
 export async function GET(request:NextRequest){
  const key=request.nextUrl.searchParams.get('type')||'';
+ if(key==='media'||key==='images'){
+ const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return NextResponse.json({error:'Sign in required'},{status:401});
+ const {data:admin}=await supabase.rpc('cinema_is_admin');if(!admin)return NextResponse.json({error:'Forbidden'},{status:403});
+ if(key==='media'){
+  const {data,error}=await supabase.from('movie_review_drafts').select('id,model,tone,impression,candidates,created_at').order('created_at',{ascending:false}).limit(500);
+  return NextResponse.json(error?{error:error.message}:{rows:(data||[]).map(x=>({id:x.id,title:x.model+' · '+x.tone,details:(x.candidates||[]).join(' / '),created_at:x.created_at}))},{status:error?500:200});
+ }
+ const {data,error}=await supabase.from('movies').select('id,title,poster_path,created_at').order('created_at',{ascending:false}).limit(500);
+ return NextResponse.json(error?{error:error.message}:{rows:(data||[]).map(x=>({id:String(x.id),title:x.title,details:x.poster_path||'No poster',created_at:x.created_at}))},{status:error?500:200});
+}
  const ctx=await context(key);if(ctx.error)return ctx.error;
  const {data,error}=await ctx.supabase!.from(ctx.config!.table).select('*').order('created_at',{ascending:false}).limit(500);
  return NextResponse.json(error?{error:error.message}:{rows:data},{status:error?500:200});
