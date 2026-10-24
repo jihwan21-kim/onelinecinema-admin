@@ -1,6 +1,7 @@
 'use client';
 import { useCallback,useEffect,useState } from 'react';
 import Link from 'next/link';
+import ImageManager from '@/components/image-manager';
 import { ArrowLeft, Database, Plus, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 type Row={id:string;title:string;details:string;created_at:string;[key:string]:unknown};
 type Mode='read'|'update'|'crud';
@@ -60,17 +61,18 @@ export default function Management(){
  <section style={{minWidth:0}}>
  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
  <div><h2 style={{margin:'0 0 7px'}}>{current.name}</h2><p style={{color:'#828394',fontSize:13,margin:0}}>{current.help} · {current.mode==='crud'?'Create / Read / Update / Delete':current.mode==='update'?'Read / Update':'Read only'}</p></div>
- <div style={{display:'flex',gap:9}}><button className="secondary" onClick={()=>void load()}><RefreshCw size={16}/> Refresh</button>{current.mode==='crud'&&<button className="primary" onClick={create}><Plus size={16}/> Add new</button>}</div>
+ <div style={{display:'flex',gap:9}}><button className="secondary" onClick={()=>void load()}><RefreshCw size={16}/> Refresh</button>{current.mode==='crud'&&selected!=='images'&&<button className="primary" onClick={create}><Plus size={16}/> Add new</button>}</div>
  </div>
- {error&&<p role="alert" className="form-error">{error}</p>}
- {(editing||creating)&&<form onSubmit={e=>{e.preventDefault();void mutate(creating?'create':'update')}} className="panel" style={{padding:22,display:'grid',gap:13,marginTop:18}}>
+ {selected==='images'?<ImageManager/>:null}
+ {selected!=='images'&&error&&<p role="alert" className="form-error">{error}</p>}
+ {selected!=='images'&&(editing||creating)&&<form onSubmit={e=>{e.preventDefault();void mutate(creating?'create':'update')}} className="panel" style={{padding:22,display:'grid',gap:13,marginTop:18}}>
  <label>Title / value<input required maxLength={200} value={title} onChange={e=>setTitle(e.target.value)} style={{display:'block',padding:12,width:'100%',marginTop:7,border:'1px solid #dedeea',borderRadius:7}}/></label>
  <label>Details<textarea value={details} onChange={e=>setDetails(e.target.value)} rows={3} style={{display:'block',padding:12,width:'100%',marginTop:7,border:'1px solid #dedeea',borderRadius:7}}/></label>
  <div style={{display:'flex',gap:10}}><button disabled={saving} className="primary" type="submit">{saving?'Saving...':'Save'}</button><button type="button" className="secondary" onClick={()=>{setEditing(null);setCreating(false)}}>Cancel</button></div>
  </form>}
- <div className="panel table-panel" style={{marginTop:22}}>
+ {selected!=='images'&&<div className="panel table-panel" style={{marginTop:22}}>
  <div className="table-scroll"><table><thead><tr><th>NAME / VALUE</th><th>DETAILS</th><th>CREATED</th>{current.mode!=='read'&&<th>ACTIONS</th>}</tr></thead><tbody>
  {rows.map(row=><tr key={row.id}><td style={{fontWeight:700}}>{row.title}</td><td style={{maxWidth:400,whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{row.details||'—'}</td><td style={{whiteSpace:'nowrap'}}>{new Date(row.created_at).toLocaleDateString()}</td>{current.mode!=='read'&&<td><div style={{display:'flex',gap:8}}><button className="secondary" onClick={()=>edit(row)} title="Edit"><Pencil size={14}/></button>{current.mode==='crud'&&<button className="secondary" onClick={()=>void mutate('delete',row)} title="Delete"><Trash2 size={14}/></button>}</div></td>}</tr>)}
  </tbody></table></div>{!loading&&rows.length===0&&<p style={{padding:25,color:'#8c8e9b'}}>No records yet. {current.mode==='read'?'This collection is read-only.':'You can create the first entry above.'}</p>}{loading&&<p style={{padding:25}}>Loading…</p>}
- </div></section></div></div>;
+ </div>}</section></div></div>;
 }
